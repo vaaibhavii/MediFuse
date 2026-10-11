@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Patients \u2013 Smart Hospital</title>
+<link rel="stylesheet" href="shared.css"></head>
+<body>
+<nav><span class="brand">Smart Hospital</span>
+  <a href="index.html">Patients</a><a href="screening.html">New Screening</a></nav>
+<main>
+  <h1>Patient Records</h1>
+  <p class="muted">Stored locally in this browser. Each screening run creates or updates a record here.</p>
+  <div class="card" id="list"></div>
+</main>
+<script src="shared.js"></script>
+<script>
+  const patients = getPatients();
+  const listEl = document.getElementById("list");
+  if(patients.length === 0){
+    listEl.innerHTML = `<div class="empty">No patients yet. <a href="screening.html">Run a new screening</a> to get started.</div>`;
+  } else {
+    listEl.innerHTML = patients.map(p => {
+      const cat = p.lastResult ? p.lastResult.risk_category : null;
+      const badge = cat ? `<span><span class="muted">${Math.round(p.lastResult.risk_score*100)}% &nbsp;</span><span class="badge ${cat}">${cat}</span></span>` : `<span class="muted">Not yet screened</span>`;
+      const date = p.lastRunAt ? new Date(p.lastRunAt).toLocaleString() : "";
+      return `<a class="patient-row" href="results.html?id=${p.id}">
+        <span><strong>${p.name}</strong><br><span class="muted">${date}</span></span>${badge}</a>`;
+    }).join("");
+  }
+</script>
+</body></html>

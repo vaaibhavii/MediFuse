@@ -1,0 +1,11 @@
+pandas
+numpy
+scikit-learn
+joblib
+opencv-python
+fastapi
+uvicorn[standard]
+python-multipart
+
+# optional, only needed if you fine-tune the urine pad detector:
+ultralytics

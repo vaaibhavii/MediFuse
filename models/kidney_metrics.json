@@ -1,0 +1,56 @@
+{
+  "naive_bayes": {
+    "accuracy": 0.975,
+    "precision": 1.0,
+    "recall": 0.96,
+    "f1": 0.9795918367346939,
+    "roc_auc": 1.0,
+    "confusion_matrix": [
+      [
+        30,
+        0
+      ],
+      [
+        2,
+        48
+      ]
+    ],
+    "cv_f1_mean": 0.9742915312535565
+  },
+  "decision_tree": {
+    "accuracy": 0.975,
+    "precision": 1.0,
+    "recall": 0.96,
+    "f1": 0.9795918367346939,
+    "roc_auc": 0.9993333333333334,
+    "confusion_matrix": [
+      [
+        30,
+        0
+      ],
+      [
+        2,
+        48
+      ]
+    ],
+    "cv_f1_mean": 0.9640776901286155
+  },
+  "svm": {
+    "accuracy": 0.9875,
+    "precision": 1.0,
+    "recall": 0.98,
+    "f1": 0.98989898989899,
+    "roc_auc": 1.0,
+    "confusion_matrix": [
+      [
+        30,
+        0
+      ],
+      [
+        1,
+        49
+      ]
+    ],
+    "cv_f1_mean": 0.9948717948717949
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "selected_model": "svm",
+  "reason": "highest F1-score (ties broken by ROC-AUC) \u2014 not raw accuracy, because these datasets are class-imbalanced",
+  "metrics": {
+    "accuracy": 0.7094017094017094,
+    "precision": 0.9454545454545454,
+    "recall": 0.6265060240963856,
+    "f1": 0.7536231884057971,
+    "roc_auc": 0.841070163004961,
+    "confusion_matrix": [
+      [
+        31,
+        3
+      ],
+      [
+        31,
+        52
+      ]
+    ],
+    "cv_f1_mean": 0.6391526919682259
+  }
+}

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screening Report</title><link rel="stylesheet" href="shared.css"></head>
+<body>
+<nav><span class="brand">Smart Hospital</span><a href="index.html">Patients</a><a href="screening.html">New Screening</a></nav>
+<main id="main"></main>
+<script src="shared.js"></script><script src="clinical.js"></script>
+<script>
+const id = new URLSearchParams(location.search).get("id");
+const patient = id && getPatient(id), main = document.getElementById("main");
+const SRC = {kidney:"Kidney panel", liver:"Liver panel", diabetes:"Diabetes panel", urinalysis:"Urine strip", heart:"Heart"};
+const COL = {Low:"#16a34a", Moderate:"#d97706", High:"#dc2626"};
+
+if (!patient || !patient.lastResult) {
+  main.innerHTML = `<div class="card empty">No result found. <a href="index.html">Back to patients</a></div>`;
+} else {
+  const r = patient.lastResult, inp = patient.inputs;
+  const vals = inp ? {...inp.patient, ...inp.lab} : {};
+  const rows = inp ? evaluateLabs(vals) : [];
+  const out = rows.filter(x => x.level > 0), attn = rows.filter(x => x.level >= 3);
+  const pct = Math.round(r.risk_score * 100);
+
+  const contrib = Object.entries(r._debug_per_source_contribution || {}).filter(([, c]) => c.used);
+  const total = contrib.reduce((s, [, c]) => s + c.weighted_contribution, 0) || 1;
+  const top = contrib.slice().sort((a, b) => b[1].weighted_contribution - a[1].weighted_contribution)[0];
+  const why = contrib.map(([s, c]) => {
+    const share = Math.round(c.weighted_contribution / total * 100);
+    return `<tr><td><strong>${SRC[s] || s}</strong></td><td>${Math.round(c.probability * 100)}%</td>
+      <td>${c.effective_weight.toFixed(2)}</td>
+      <td style="width:38%"><div class="bar-track"><div class="bar-fill" style="width:${share}%"></div></div></td><td>${share}%</td></tr>`;
+  }).join("");
+
+  const groups = ["Kidney", "Liver", "Metabolic"].map(g => {
+    const rs = rows.filter(x => x.p.g === g); if (!rs.length) return "";
+    return `<tr class="grp"><td colspan="4">${g}</td></tr>` + rs.map(x => `<tr class="${x.level ? "flag" : ""}">
+      <td>${x.p.n}</td><td class="num"><strong>${x.v}</strong> <span class="muted">${x.p.u}</span>${x.dir ? (x.dir === "h" ? " &#9650;" : " &#9660;") : ""}</td>
+      <td class="num muted">${rangeText(x)}</td><td><span class="pill l${x.level}">${LEVELS[x.level].n}</span></td></tr>`).join("");
+  }).join("");
+
+  const side = out.length ? out.slice().sort((a, b) => b.level - a.level).map(x => `<div class="note l${x.level}">
+      <div class="note-h"><strong>${x.p.n}</strong> <span class="pill l${x.level}">${LEVELS[x.level].n}</span></div>
+      <div class="muted">${x.v} ${x.p.u} (ref ${rangeText(x)})</div>
+      <p>${x.note}</p><p class="act">${LEVELS[x.level].a}</p></div>`).join("")
+    : `<p class="muted">${inp ? "All measured values are within reference ranges." : "Re-run this screening to see parameter-level interpretation."}</p>`;
+
+  const flags = activeFlags(vals).map(f => `<span class="chip">${f}</span>`).join("") || `<span class="muted">None recorded</span>`;
+
+  main.innerHTML = `
+  <div class="head"><div><h1>${patient.name}</h1>
+    <div class="muted">Age ${vals.age ?? "-"} &middot; ${vals.Gender || "-"} &middot; Screened ${new Date(patient.lastRunAt).toLocaleString()}</div></div>
+    <div class="actions"><button class="btn-secondary" onclick="print()">Print report</button>
+    <a href="screening.html"><button>New screening</button></a></div></div>
+
+  <div class="card hero">
+    <div class="ring" style="--p:${pct};--c:${COL[r.risk_category]}"><div><b>${pct}</b><span>risk score</span></div></div>
+    <div class="hero-txt"><span class="badge ${r.risk_category}">${r.risk_category} risk</span>
+      <span class="chip">Follow-up priority: ${r.follow_up_priority}</span>
+      <p>${top ? `<strong>${SRC[top[0]]}</strong> is the biggest driver of this score (${Math.round(top[1].weighted_contribution / total * 100)}% of the total).` : ""}
+      ${inp ? ` ${out.length} of ${rows.length} measured parameters are outside their reference range${attn.length ? `, and <strong>${attn.length} need the physician's attention</strong>` : ""}.` : ""}</p></div>
+  </div>
+
+  <div class="card"><h2>Why this score</h2>
+    <table><thead><tr><th>Evidence source</th><th>Model probability</th><th>Weight</th><th>Influence on score</th><th></th></tr></thead><tbody>${why}</tbody></table>
+    <p class="muted">Weight combines model confidence, source reliability, patient context (e.g. known conditions) and how abnormal the values are.</p></div>
+
+  <div class="two-col">
+    <div class="card"><h2>Results vs reference ranges</h2>${inp ? `<table><thead><tr><th>Parameter</th><th>Patient value</th><th>Normal range</th><th>Status</th></tr></thead><tbody>${groups}</tbody></table>
+      <p class="muted">Ranges are standard adult values, adjusted for sex where relevant. &#9650; above range, &#9660; below range.</p>`
+      : `<p class="muted">This record was saved before detailed values were stored. Run a new screening.</p>`}
+      <h2 style="margin-top:20px">Clinical flags</h2><div>${flags}</div></div>
+    <aside class="card side"><h2>Clinical interpretation</h2>${side}</aside>
+  </div>
+
+  <div class="card"><h2>Recommended actions</h2><ul class="plain">${r.recommended_actions.map(a => `<li>${a}</li>`).join("")}</ul>
+    <p class="muted">${r.disclaimer} Interpretation notes are rule-based decision support, not a diagnosis.</p></div>`;
+}
+</script></body></html>

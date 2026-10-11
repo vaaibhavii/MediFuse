@@ -1,0 +1,25 @@
+﻿# Virtual environment (the 5 GB culprit)
+ml_mini_project.venv/
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Large image datasets (share via Drive/Kaggle instead)
+data/raw/urine-dataset/
+data/raw/urinalyze-dataset/
+data/raw/urine-pad-dataset/
+
+# YOLO training outputs and auto-downloadable base weights
+models/pad_detector_run/
+models/pad_detector_run-2/
+weights/
+yolov8n.pt
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>New Screening \u2013 Smart Hospital</title>
+<link rel="stylesheet" href="shared.css"></head>
+<body>
+<nav><span class="brand">Smart Hospital</span>
+  <a href="index.html">Patients</a><a href="screening.html">New Screening</a></nav>
+<main>
+  <h1>New Risk Screening</h1>
+  <div class="card">
+    <p class="muted">All fields already have typical normal values pre-filled \u2014 you only need to change the ones that are actually abnormal for this patient. Or load a ready-made example:</p>
+    <button type="button" class="btn-secondary" id="loadHealthy">Load Healthy Example</button>
+    <button type="button" class="btn-secondary" id="loadHighRisk">Load High-Risk Example</button>
+
+    <label>Patient Name</label><input id="patientName" type="text" placeholder="e.g. Rahul Ambre">
+    <label>Age (used across all sources)</label><input id="patientAge" type="number" value="45">
+
+    <div class="section-title"><h2>Kidney panel</h2></div>
+    <div id="kidneyFields"></div>
+
+    <div class="section-title"><h2>Liver panel</h2></div>
+    <div id="liverFields"></div>
+
+    <div class="section-title"><h2>Diabetes panel</h2></div>
+    <div id="diabetesFields"></div>
+
+    <div class="section-title"><h2>Known conditions</h2></div>
+    <div id="conditionsFields"></div>
+
+    <div class="section-title"><h2>Urine strip photo (optional)</h2></div>
+    <p class="muted">Upload a photo to run it through the trained pad detector. Leave empty to skip urinalysis evidence.</p>
+    <input id="urineFile" type="file" accept="image/*">
+
+    <div class="section-title">
+      <button id="submitBtn">Run Screening</button>
+      <span id="status" class="muted"></span>
+    </div>
+  </div>
+</main>
+<script src="shared.js"></script>
+<script>
+  document.getElementById("conditionsFields").innerHTML = KNOWN_CONDITIONS.map(([key,label])=>
+    `<label><input type="checkbox" data-cond="${key}" style="width:auto"> ${label}</label>`
+  ).join("");
+  renderFields(document.getElementById("kidneyFields"), KIDNEY_FIELDS);
+  renderFields(document.getElementById("liverFields"), LIVER_FIELDS);
+  renderFields(document.getElementById("diabetesFields"), DIABETES_FIELDS);
+
+  function loadPreset(name){
+    const p = PRESETS[name];
+    document.getElementById("patientAge").value = p.age;
+    applyPreset(document.getElementById("kidneyFields"), p.kidney);
+    applyPreset(document.getElementById("liverFields"), p.liver);
+    applyPreset(document.getElementById("diabetesFields"), p.diabetes);
+  }
+  document.getElementById("loadHealthy").onclick = () => loadPreset("healthy");
+  document.getElementById("loadHighRisk").onclick = () => loadPreset("highRisk");
+
+  document.getElementById("submitBtn").onclick = async () => {
+    const statusEl = document.getElementById("status");
+    const name = document.getElementById("patientName").value.trim();
+    if(!name){ statusEl.textContent = "Enter a patient name first."; return; }
+    const age = Number(document.getElementById("patientAge").value) || null;
+
+    const patientObj = { age, ...collectFields(document.getElementById("kidneyFields")) };
+    const labObj = {
+      Age: age,
+      ...collectFields(document.getElementById("liverFields")),
+      ...collectFields(document.getElementById("diabetesFields")),
+    };
+    const conditions = [...document.querySelectorAll("[data-cond]")]
+      .filter(el=>el.checked).map(el=>el.dataset.cond);
+    const file = document.getElementById("urineFile").files[0] || null;
+
+    statusEl.textContent = "Running screening\u2026";
+    document.getElementById("submitBtn").disabled = true;
+    try{
+      const result = await callPredictFull(patientObj, labObj, conditions, file);
+      const id = crypto.randomUUID();
+      addPatient({ id, name, createdAt: new Date().toISOString(), lastResult: result, lastRunAt: new Date().toISOString(), inputs: { patient: patientObj, lab: labObj, conditions } });
+      window.location.href = `results.html?id=${id}`;
+    }catch(err){
+      statusEl.textContent = "Error: " + err.message;
+      document.getElementById("submitBtn").disabled = false;
+    }
+  };
+</script>
+</body></html>
